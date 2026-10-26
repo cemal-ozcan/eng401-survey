@@ -53,6 +53,8 @@ data/raw|processed|replay   field logs (large files not committed)
 docs/ICD.md         telemetry + CSV data dictionary (single source of truth for formats)
 docs/PINOUT.md      pin table (sent to hardware team)
 docs/hardware-team/ Turkish step-by-step guides: flashing, wiring, test procedures
+shared/golden/       cross-language test fixtures (UTM vectors from pyproj, NMEA sample, record CSV/JSON)
+tools/              release script, golden-vector generator
 reference/          handout, parts list
 ```
 
@@ -65,7 +67,7 @@ reference/          handout, parts list
    No unbounded waits on I²C/UART/SD.
 3. Pure logic (NMEA parser, UTM, record/CSV/JSON encoding, timebase) lives in `firmware/lib/`
    with no Arduino includes, so it runs under `pio test -e native`.
-4. Formats change only together with `docs/ICD.md` and the PC codec + tests.
+4. Formats change only together with `docs/ICD.md`, `shared/golden/*`, firmware `lib/record` and `pc/surveypc/protocol.py` (both are tested byte-exact against the golden files).
 5. A step is done only when `pio run` (all envs) and tests (`pio test -e native`, `pytest`) pass.
 6. Never invent hardware details. Unverified assumptions go into the Unknowns list below.
 7. Releases for the hardware team are git-tagged (`v0.1-diag`, …) with a prebuilt `.bin`.

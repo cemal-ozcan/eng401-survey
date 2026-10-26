@@ -54,12 +54,17 @@ Invalid numeric values are written as empty fields (not 0), except `dist` (see f
 | 6 | UTC synced |
 | 7 | Running with MOCK sensors |
 
-### 2.2 Example row
+### 2.2 Example rows (= `shared/golden/record_example.csv`, a test fixture)
+Row 1: full fix in Ankara. Row 2: no fix, no UTC, BME280 failed, ToF invalid.
 ```
 seq,t_us,utc,fix,sats,hdop,lat,lon,alt,spd,cog,gnss_age_ms,utm_zone,utm_hemi,easting,northing,ax,ay,az,gx,gy,gz,temp,pres,hum,dist,flags,missed,mark
-42,43012345,2026-11-02T10:15:42.000Z,1,9,0.9,39.89123456,32.78012345,938.4,3.6,87.2,180,36,N,481234.567,4415678.901,0.12,-0.05,9.79,0.3,-0.1,0.0,18.4,912.3,41.0,1532,127,0,0
+42,43012345,2026-11-02T10:15:42.000Z,1,9,0.92,39.92077000,32.85411000,938.4,3.60,87.2,180,36,N,487532.490,4418973.710,0.120,-0.050,9.790,0.30,-0.10,0.00,18.40,912.30,41.0,1532,127,0,0
+43,44012001,,0,3,25.50,,,,,,,,,,,0.110,-0.040,9.810,0.20,0.00,-0.10,,,,0,50,2,1
 ```
-(Coordinates illustrative only.)
+
+### 2.3 Number formatting (decimals)
+hdop 2, lat/lon 8, alt 1, spd 2, cog 1, easting/northing 3, ax/ay/az 3, gx/gy/gz 2, temp 2, pres 2, hum 1.
+Firmware (`lib/record`) and PC (`surveypc.protocol`) are tested to produce these files byte for byte.
 
 ## 3. Telemetry protocol (Wi-Fi, UDP)
 Why UDP: no head-of-line blocking or hidden retransmissions, so loss and latency are measured
@@ -69,13 +74,10 @@ honestly; `seq` exposes every lost datagram. Full dataset is always on SD anyway
 - Payload: one UTF-8 JSON object per datagram, `"v": 1` protocol version, `"type"` field.
 
 ### 3.1 `data` (every tick, or every N-th tick if `TELEM_DECIMATE > 1`)
-Keys are the CSV column names (§2), invalid values are `null`:
+Keys are the CSV column names (§2) in the same order, invalid values are `null`
+(`shared/golden/record_example.jsonl`):
 ```json
-{"v":1,"type":"data","seq":42,"t_us":43012345,"utc":"2026-11-02T10:15:42.000Z","fix":1,"sats":9,
- "hdop":0.9,"lat":39.89123456,"lon":32.78012345,"alt":938.4,"spd":3.6,"cog":87.2,"gnss_age_ms":180,
- "utm_zone":36,"utm_hemi":"N","easting":481234.567,"northing":4415678.901,
- "ax":0.12,"ay":-0.05,"az":9.79,"gx":0.3,"gy":-0.1,"gz":0.0,"temp":18.4,"pres":912.3,"hum":41.0,
- "dist":1532,"flags":127,"missed":0,"mark":0}
+{"v":1,"type":"data","seq":42,"t_us":43012345,"utc":"2026-11-02T10:15:42.000Z","fix":1,"sats":9,"hdop":0.92,"lat":39.92077000,"lon":32.85411000,"alt":938.4,"spd":3.60,"cog":87.2,"gnss_age_ms":180,"utm_zone":36,"utm_hemi":"N","easting":487532.490,"northing":4418973.710,"ax":0.120,"ay":-0.050,"az":9.790,"gx":0.30,"gy":-0.10,"gz":0.00,"temp":18.40,"pres":912.30,"hum":41.0,"dist":1532,"flags":127,"missed":0,"mark":0}
 ```
 
 ### 3.2 `hb` heartbeat (1 Hz, independent of data)

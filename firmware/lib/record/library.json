@@ -1,0 +1,5 @@
+{
+  "name": "record",
+  "version": "0.1.0",
+  "description": "Survey record and its CSV / JSON encodings (docs/ICD.md)"
+}

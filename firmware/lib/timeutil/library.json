@@ -1,0 +1,5 @@
+{
+  "name": "timeutil",
+  "version": "0.1.0",
+  "description": "Platform-independent timeutil helpers"
+}
