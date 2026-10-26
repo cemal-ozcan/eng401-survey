@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 
 from .clocksync import pc_now_us
-from .protocol import PROTOCOL_VERSION, encode_data_json, parse_csv_line
+from .protocol import FLAG_WIFI, PROTOCOL_VERSION, encode_data_json, parse_csv_line
 
 DEFAULT_SOURCE = Path(__file__).resolve().parents[2] / "data" / "sample" / "mock_survey.csv"
 
@@ -109,6 +109,7 @@ class VirtualEsp32:
             rec = dict(self.rows[seq % len(self.rows)])
             rec["seq"] = seq
             rec["t_us"] = self.device_now_us()  # sampling time on the device clock
+            rec["flags"] = (rec["flags"] or 0) | FLAG_WIFI
             if self.rng.random() < self.loss:
                 self.dropped += 1
             else:

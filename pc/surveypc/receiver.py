@@ -50,7 +50,7 @@ class TelemetryReceiver:
         listen_port: int = PC_PORT,
         out_csv: Path | None = None,
         ping_interval_s: float = 1.0,
-        on_record: Callable[[Record], None] | None = None,
+        on_record: Callable[[Record, float | None], None] | None = None,
         bind_host: str = "0.0.0.0",
     ) -> None:
         self.listen_port = listen_port
@@ -167,7 +167,7 @@ class TelemetryReceiver:
                 row = ["" if rec[c] is None else rec[c] for c in COLUMNS]
                 self._csv.writerow(row + [rx_us, "" if lat_ms is None else f"{lat_ms:.3f}"])
         if self.on_record:
-            self.on_record(rec)
+            self.on_record(rec, lat_ms)  # called on the receiver thread
 
     # ------------------------------------------------------------ status
 

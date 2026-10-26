@@ -43,7 +43,8 @@ required tests, grading), `ENG401_Satin_Alinacak_Malzemeler.docx` (parts list = 
 - **UTM:** computed on-device with our own Transverse Mercator (Krüger series, WGS84);
   PC re-derives with `pyproj` as independent verification (handout §9).
 - **Telemetry:** UDP JSON (see `docs/ICD.md`). Latency via NTP-style ping/pong clock-offset estimate.
-- **Dashboard:** PyQt + pyqtgraph (live streaming), receiver thread separate from UI.
+- **Dashboard:** PySide6 + pyqtgraph (`pc/surveypc/dashboard.py`); logic in `dashboard_model.py` (tested). Receiver thread →
+  queue → 5 Hz GUI timer; telemetry starts after the window is shown.
 
 ## Folder layout
 ```
@@ -86,9 +87,11 @@ reference/          handout, parts list
 
 ## Commands
 Tooling lives in the repo venv `.venv/` (PlatformIO, pytest, pyproj). Setup:
-`python3 -m venv .venv && .venv/bin/pip install platformio && .venv/bin/pip install -e "pc[dev]"`
+`python3 -m venv .venv && .venv/bin/pip install platformio && .venv/bin/pip install -e "pc[dev,gui]"`
 - Firmware: `cd firmware && ../.venv/bin/pio run` (builds esp32, esp32-mock, diag) | `../.venv/bin/pio test -e native`
 - PC: `cd pc && ../.venv/bin/pytest`
+- Dashboard: `.venv/bin/python -m surveypc.dashboard` (real device) or `--demo` (built-in virtual ESP32);
+  headless check: `QT_QPA_PLATFORM=offscreen ... --demo --screenshot out.png --after 20`
 - Telemetry without hardware: `.venv/bin/python -m surveypc.receiver` + `.venv/bin/python -m surveypc.virtual_esp32 [--loss 0.05 --delay-ms 25]`
 - Release for hardware team: `tools/make_release.sh <env> <tag>` → `dist/<tag>/eng401-<tag>.bin` (flash at 0x0), then `git tag <tag>`
 
