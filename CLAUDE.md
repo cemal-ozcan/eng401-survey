@@ -59,10 +59,13 @@ reference/          handout, parts list
 ```
 
 ## Rules
-1. **Mock vs real:** every sensor + SD sits behind an interface in `firmware/include/hal/`.
-   Build flag `USE_MOCK=1` selects mock implementations (env `esp32-mock`); nothing outside
-   `hal/` may include a sensor library. Mocks must model noise, GNSS fix loss, HDOP drift,
-   sensor init failure / read errors.
+1. **Mock vs real:** interfaces in `firmware/lib/hal/src/hal.h` (Clock, GnssSerial, Imu, EnvSensor,
+   RangeSensor, Storage). `hal::devices()` comes from `src/app/hal_real.cpp` (USE_MOCK=0) or
+   `src/app/hal_mock.cpp` (USE_MOCK=1, env `esp32-mock`). Sensor libraries may be included only in
+   `src/app/drivers/real_devices.*` (and the standalone diag firmware). Mocks (`lib/hal/src/mock_*`)
+   are Arduino-free and deterministic per seed; they model noise, GNSS cold start / fix outages /
+   HDOP drift, sensor not-found / flaky / fail-after-N-s, SD full / removed. The mock GNSS emits real
+   NMEA, so the real parser is always exercised. MockRoute provides ground truth for analysis tests.
 2. **Non-blocking:** no `delay()` in app tasks; use `vTaskDelayUntil`, queues, timeouts.
    No unbounded waits on I²C/UART/SD.
 3. Pure logic (NMEA parser, UTM, record/CSV/JSON encoding, timebase) lives in `firmware/lib/`

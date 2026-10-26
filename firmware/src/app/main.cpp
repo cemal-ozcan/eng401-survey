@@ -1,67 +1,91 @@
+// Survey firmware, step 3: all sensors through the HAL, one CSV record per second
+// on the serial port. Identical code for real (esp32) and simulated (esp32-mock)
+// hardware. Step 4 moves this into FreeRTOS tasks with queues.
+
 #include <Arduino.h>
 
 #include "build_info.h"
+#include "hal.h"
 #include "nmea_parser.h"
 #include "record.h"
-#include "utm.h"
+#include "record_builder.h"
 
 namespace {
 
-// Week-3 checkpoint demo (GNSS/UTM coordinate processing): decode recorded
-// NMEA, convert to UTM and print the resulting survey record. Replaced by the
-// FreeRTOS application in step 4.
-const char* const kDemoNmea[] = {
-    "$GNRMC,101542.00,A,3955.24620,N,03251.24660,E,1.944,87.20,021126,,,A*4B",
-    "$GNGGA,101542.00,3955.24620,N,03251.24660,E,1,09,0.92,938.4,M,36.2,M,,*49",
-    "$GNVTG,87.20,T,,M,1.944,N,3.600,K,A*13",
-};
+constexpr uint32_t kGnssBaud = 9600;  // u-blox default (NEO-6M / NEO-M8N)
+constexpr uint32_t kTickMs = 100;
+constexpr uint32_t kTicksPerRecord = 10;  // 1 Hz records
 
-void runGnssUtmDemo() {
-  nmea::Parser parser;
-  for (const char* s : kDemoNmea) parser.processSentence(s);
-  const nmea::GnssData& g = parser.data();
+nmea::Parser gnssParser;
+uint64_t gnssUpdateUs = 0;
+hal::RangeSample lastRange{0, false};
+bool rangeFresh = false;
+uint32_t seq = 0;
 
-  record::Record r;
-  r.tUs = esp_timer_get_time();
-  r.utcMs = g.utcMs();
-  r.fix = static_cast<uint8_t>(g.fixQuality);
-  r.sats = static_cast<uint8_t>(g.satellites);
-  r.hdop = g.hdop;
-  r.lat = g.lat;
-  r.lon = g.lon;
-  r.alt = g.alt;
-  r.spd = g.speedKmh;
-  r.cog = g.courseDeg;
+void printInit(const char* name, hal::Status s) {
+  Serial.printf("  %-8s %s\n", name, hal::statusText(s));
+}
 
-  uint32_t t0 = micros();
-  geo::Utm u{};
-  if (g.posValid && geo::latLonToUtm(g.lat, g.lon, u)) {
-    r.utmZone = u.zone;
-    r.utmHemi = u.hemisphere;
-    r.easting = u.easting;
-    r.northing = u.northing;
+void drainGnss(hal::Devices& d) {
+  char buf[128];
+  size_t n;
+  while ((n = d.gnss.read(buf, sizeof(buf))) > 0) {
+    for (size_t i = 0; i < n; ++i) {
+      nmea::Sentence s = gnssParser.feed(buf[i]);
+      if (s == nmea::Sentence::GGA || s == nmea::Sentence::RMC) gnssUpdateUs = d.clock.nowUs();
+    }
   }
-  uint32_t utmUs = micros() - t0;
+}
+
+void emitRecord(hal::Devices& d) {
+  record::Record r;
+  r.seq = seq++;
+  r.tUs = d.clock.nowUs();
+  r.utcMs = gnssParser.data().utcMs();
+  if (build_info::isMock()) r.flags |= record::kFlagMock;
+  record::fillGnss(r, gnssParser.data(), gnssUpdateUs, r.tUs);
+
+  hal::ImuSample imu;
+  record::fillImu(r, d.imu.read(imu) == hal::Status::Ok ? &imu : nullptr);
+  hal::EnvSample env;
+  record::fillEnv(r, d.env.read(env) == hal::Status::Ok ? &env : nullptr);
+  record::fillRange(r, rangeFresh ? &lastRange : nullptr);
+  rangeFresh = false;
 
   char line[record::kMaxCsvLen];
-  record::toCsv(r, line, sizeof(line));
-  Serial.println("--- GNSS -> UTM demo ---");
-  Serial.printf("lat %.8f lon %.8f -> zone %u%c E %.3f N %.3f (UTM took %lu us)\n", g.lat, g.lon, u.zone,
-                u.hemisphere, u.easting, u.northing, static_cast<unsigned long>(utmUs));
-  Serial.println(record::csvHeader());
-  Serial.println(line);
+  if (record::toCsv(r, line, sizeof(line)) > 0) Serial.println(line);
 }
 
 }  // namespace
 
 void setup() {
   Serial.begin(115200);
+  delay(500);  // let the serial monitor attach; setup only, before the survey starts
   Serial.printf("\nENG401 survey firmware v%s (%s sensors)\n", build_info::version(),
                 build_info::modeName());
-  runGnssUtmDemo();
+
+  hal::Devices& d = hal::devices();
+  Serial.println("Device init:");
+  printInit("GNSS", d.gnss.begin(kGnssBaud) ? hal::Status::Ok : hal::Status::NotFound);
+  printInit("MPU6050", d.imu.begin());
+  printInit("BME280", d.env.begin());
+  printInit("VL53L0X", d.range.begin());
+  printInit("SD", d.storage.begin() ? hal::Status::Ok : hal::Status::NotFound);
+  Serial.println(record::csvHeader());
 }
 
 void loop() {
-  // Placeholder: the application will run in FreeRTOS tasks; loop() stays idle.
-  vTaskDelay(pdMS_TO_TICKS(1000));
+  static TickType_t lastWake = xTaskGetTickCount();
+  static uint32_t tick = 0;
+  hal::Devices& d = hal::devices();
+
+  drainGnss(d);
+  hal::RangeSample rs;
+  if (d.range.poll(rs) == hal::Status::Ok) {
+    lastRange = rs;
+    rangeFresh = true;
+  }
+  if (++tick % kTicksPerRecord == 0) emitRecord(d);
+
+  vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(kTickMs));  // fixed-rate, not delay()
 }

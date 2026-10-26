@@ -1,0 +1,5 @@
+{
+  "name": "hal",
+  "version": "0.1.0",
+  "description": "Hardware abstraction interfaces and platform-independent mock devices"
+}
