@@ -1,0 +1,5 @@
+{
+  "name": "nmea",
+  "version": "0.0.1",
+  "description": "Platform-independent NMEA 0183 helpers (line assembly, checksum, basic GGA fields)"
+}

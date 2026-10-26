@@ -1,0 +1,6 @@
+# Wokwi simulator config (VS Code "Wokwi Simulator" extension or wokwi-cli).
+# Build first:  cd firmware && ../.venv/bin/pio run -e diag
+[wokwi]
+version = 1
+firmware = "../firmware/.pio/build/diag/firmware.bin"
+elf = "../firmware/.pio/build/diag/firmware.elf"

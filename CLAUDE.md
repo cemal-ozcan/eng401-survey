@@ -41,7 +41,8 @@ required tests, grading), `ENG401_Satin_Alinacak_Malzemeler.docx` (parts list = 
 
 ## Folder layout
 ```
-firmware/           PlatformIO project (env: esp32 real, esp32-mock, native tests)
+firmware/           PlatformIO project (env: esp32 real, esp32-mock, diag, native tests)
+  src/app/ src/diag/  survey application / diagnostic firmware (selected by build_src_filter)
   include/ src/     app code; lib/ = our portable libs (nmea, utm, record, timebase) – no Arduino deps
   test/             PlatformIO native (host) unit tests for lib/
 wokwi/              Wokwi simulator config (diagram.json, wokwi.toml)
@@ -73,8 +74,9 @@ reference/          handout, parts list
 ## Commands
 Tooling lives in the repo venv `.venv/` (PlatformIO, pytest, pyproj). Setup:
 `python3 -m venv .venv && .venv/bin/pip install platformio && .venv/bin/pip install -e "pc[dev]"`
-- Firmware: `cd firmware && ../.venv/bin/pio run` (builds esp32 + esp32-mock) | `../.venv/bin/pio test -e native`
+- Firmware: `cd firmware && ../.venv/bin/pio run` (builds esp32, esp32-mock, diag) | `../.venv/bin/pio test -e native`
 - PC: `cd pc && ../.venv/bin/pytest`
+- Release for hardware team: `tools/make_release.sh <env> <tag>` → `dist/<tag>/eng401-<tag>.bin` (flash at 0x0), then `git tag <tag>`
 
 ## Unknowns / assumptions (keep updated)
 | # | Item | Current assumption | How to resolve |

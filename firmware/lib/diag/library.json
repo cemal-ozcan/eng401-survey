@@ -1,0 +1,5 @@
+{
+  "name": "diag",
+  "version": "0.0.1",
+  "description": "Platform-independent logic for the diagnostic firmware"
+}
