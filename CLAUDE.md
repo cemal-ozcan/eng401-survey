@@ -71,8 +71,10 @@ reference/          handout, parts list
 8. After each milestone, explain the code to the user (they must defend it orally).
 
 ## Commands
-- Firmware: `cd firmware && pio run -e esp32` | `pio run -e esp32-mock` | `pio test -e native`
-- PC: `cd pc && pytest` ; virtual device: `python -m surveypc.virtual_esp32`
+Tooling lives in the repo venv `.venv/` (PlatformIO, pytest, pyproj). Setup:
+`python3 -m venv .venv && .venv/bin/pip install platformio && .venv/bin/pip install -e "pc[dev]"`
+- Firmware: `cd firmware && ../.venv/bin/pio run` (builds esp32 + esp32-mock) | `../.venv/bin/pio test -e native`
+- PC: `cd pc && ../.venv/bin/pytest`
 
 ## Unknowns / assumptions (keep updated)
 | # | Item | Current assumption | How to resolve |

@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: surveypc
+Version: 0.0.1
+Summary: ENG401 survey system: PC receiver, dashboard, virtual ESP32, analysis helpers
+Requires-Python: >=3.10
+Requires-Dist: pyproj>=3.6
+Provides-Extra: dev
+Requires-Dist: pytest>=7; extra == "dev"

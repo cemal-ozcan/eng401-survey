@@ -1,0 +1,5 @@
+{
+  "name": "common",
+  "version": "0.0.1",
+  "description": "Platform-independent helpers shared by firmware and native tests"
+}

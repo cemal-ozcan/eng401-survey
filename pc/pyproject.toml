@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surveypc"
+version = "0.0.1"
+description = "ENG401 survey system: PC receiver, dashboard, virtual ESP32, analysis helpers"
+requires-python = ">=3.10"
+dependencies = ["pyproj>=3.6"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[tool.setuptools]
+packages = ["surveypc"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,4 @@
+pyproj>=3.6
+
+[dev]
+pytest>=7
