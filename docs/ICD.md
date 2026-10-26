@@ -70,7 +70,11 @@ Firmware (`lib/record`) and PC (`surveypc.protocol`) are tested to produce these
 Why UDP: no head-of-line blocking or hidden retransmissions, so loss and latency are measured
 honestly; `seq` exposes every lost datagram. Full dataset is always on SD anyway.
 
-- ESP32 → PC: `PC_IP:5005` (PC IP configurable; broadcast allowed). PC → ESP32: `ESP_IP:5006`.
+- ESP32 → PC: UDP port 5005. PC → ESP32: UDP port 5006 (the device sends from 5006 too).
+- **Discovery:** the device sends to `TELEMETRY_DEFAULT_HOST` (default broadcast 255.255.255.255) until
+  the first ping arrives, then unicast to the pinging address. The PC learns the device address from
+  the source of the first packet. No IP addresses need to be configured.
+- Wi-Fi credentials: `firmware/include/secrets.h` (git-ignored; template `secrets.example.h`).
 - Payload: one UTF-8 JSON object per datagram, `"v": 1` protocol version, `"type"` field.
 
 ### 3.1 `data` (every tick, or every N-th tick if `TELEM_DECIMATE > 1`)
@@ -82,8 +86,10 @@ Keys are the CSV column names (§2) in the same order, invalid values are `null`
 
 ### 3.2 `hb` heartbeat (1 Hz, independent of data)
 ```json
-{"v":1,"type":"hb","t_us":43100000,"uptime_s":43,"heap":182344,"rssi":-61,"sd_free_mb":7420,"q_drop":0,"fw":"0.1.0"}
+{"v":1,"type":"hb","t_us":43100000,"uptime_s":43,"heap":182344,"rssi":-61,"sd_free_mb":7420,"q_drop":0,"sd_err":1,"net_drop":2,"fw":"0.2.0"}
 ```
+`q_drop` = records dropped because a consumer queue was full, `sd_err` = SD write errors,
+`net_drop` = records not sent because Wi-Fi was down (they are still on the SD card).
 
 ### 3.3 Latency measurement: `ping` / `pong` (NTP-style)
 1. PC sends `{"v":1,"type":"ping","id":7,"t1":<pc_time_us>}`.

@@ -43,6 +43,8 @@ void monitorTask(void* taskHandles) {
                  static_cast<unsigned long>(ls.recordsDropped), static_cast<unsigned long>(ls.writeErrors),
                  static_cast<unsigned long>(ls.filesOpened), static_cast<unsigned long>(ls.bytesWritten / 1024),
                  ls.maxWriteUs / 1000.0);
+    serialPrintf("# STAT wifi=%s net_drops=%lu", wifiConnected.load() ? "OK" : "DOWN",
+                 static_cast<unsigned long>(netDrops.load()));
     char stacks[160] = "# STACK free(bytes)";
     for (int i = 0; i < 6; ++i) {
       char item[24];

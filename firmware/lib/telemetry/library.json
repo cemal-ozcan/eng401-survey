@@ -1,0 +1,5 @@
+{
+  "name": "telemetry",
+  "version": "0.1.0",
+  "description": "Telemetry packet encoding (heartbeat, pong) and ping parsing per docs/ICD.md"
+}

@@ -36,6 +36,7 @@ void sampleTask(void*) {
     if (r.utcMs >= 0) r.flags |= record::kFlagUtcSynced;
     if (build_info::isMock()) r.flags |= record::kFlagMock;
     if (storageOk.load()) r.flags |= record::kFlagSdOk;
+    if (wifiConnected.load()) r.flags |= record::kFlagWifi;
 
     nmea::GnssData g;
     uint64_t gnssUs = 0;

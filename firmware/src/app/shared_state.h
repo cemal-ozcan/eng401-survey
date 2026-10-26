@@ -85,6 +85,8 @@ extern std::atomic<uint32_t> recordsLogged;
 extern std::atomic<uint16_t> pendingMark;   // set by UI, consumed by sampler
 extern std::atomic<uint64_t> lastLogUs;     // drives the blue LED
 extern std::atomic<bool> storageOk;
+extern std::atomic<bool> wifiConnected;      // defined in task_net.cpp
+extern std::atomic<uint32_t> netDrops;
 extern logger::Stats loggerStats;           // written by logTask only; read for reports
 
 // Serial output from several tasks: one line at a time.

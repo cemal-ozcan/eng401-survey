@@ -1,5 +1,5 @@
-// Consumer and housekeeping tasks: SD logging, telemetry (placeholder until
-// step 6) and the user interface.
+// Consumer and housekeeping tasks: SD logging and the user interface.
+// Telemetry lives in task_net.cpp.
 
 #include <Arduino.h>
 
@@ -40,11 +40,6 @@ void logTask(void*) {
     loggerStats = log.stats();
     shared.unlock();
   }
-}
-
-void netTask(void*) {
-  record::Record r;
-  for (;;) xQueueReceive(netQueue, &r, portMAX_DELAY);  // discarded until step 6
 }
 
 void uiTask(void*) {
