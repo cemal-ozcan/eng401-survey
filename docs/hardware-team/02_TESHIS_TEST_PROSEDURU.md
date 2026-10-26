@@ -1,4 +1,4 @@
-# 2. Teşhis Yazılımı (v0.1-diag) Test Prosedürü
+# 2. Teşhis Yazılımı (v0.1.1-diag) Test Prosedürü
 
 Bu yazılım her parçayı tek tek dener ve sonucu yazar. Her 30 saniyede testi tekrarlar,
 yani kablo düzelttikten sonra **yeniden yükleme gerekmez** — sadece bekleyin
@@ -39,3 +39,7 @@ GNSS bağlamadan önce modülün **iki yüzünün fotoğrafını** bana gönderi
 1. `COPY FROM HERE` … `COPY UNTIL HERE` bloğu (metin olarak)
 2. Hangi adımda olduğunuz ve hangi LED'lerin yandığı
 3. Kabloların net bir fotoğrafı (özellikle FAIL varsa)
+
+## Ham GNSS kaydı (statik test için)
+Konsola `n` yazıp Enter'a basınca GNSS modülünden gelen ham veri ($GNRMC, $GNGGA… satırları) akar;
+tekrar `n` + Enter durdurur. Uzun kayıtlar için tarayıcı konsolu yerine kayıt aracını kullanın (kılavuz 03, Bölüm 5).

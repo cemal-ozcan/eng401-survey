@@ -96,6 +96,11 @@ Tooling lives in the repo venv `.venv/` (PlatformIO, pytest, pyproj). Setup:
   headless check: `QT_QPA_PLATFORM=offscreen ... --demo --screenshot out.png --after 20`
 - Telemetry without hardware: `.venv/bin/python -m surveypc.receiver` + `.venv/bin/python -m surveypc.virtual_esp32 [--loss 0.05 --delay-ms 25]`
 - All required tests on sample data: see header of `analysis/run_all.py` (outputs to data/processed/, not committed)
+- Logs from the hardware team → survey CSV: `.venv/bin/python -m surveypc.replay <log.txt> --out data/raw/x.csv [--send]`
+  (raw NMEA or survey-firmware serial output; `surveypc.serial_log` records the serial port with PC timestamps)
+- Device Wi-Fi is configured at run time over serial (`wifi "<ssid>" "<pass>"`, `reboot`; stored in NVS,
+  `src/app/settings_store.cpp`, parser `lib/console`). secrets.h is optional.
+- Releases: v0.1.1-diag, v0.2-app (real), v0.2-app-mock (bare ESP32, Wi-Fi/dashboard test).
 - Release for hardware team: `tools/make_release.sh <env> <tag>` → `dist/<tag>/eng401-<tag>.bin` (flash at 0x0), then `git tag <tag>`
 
 ## Unknowns / assumptions (keep updated)
@@ -108,7 +113,7 @@ Tooling lives in the repo venv `.venv/` (PlatformIO, pytest, pyproj). Setup:
 | U5 | BME280 I²C address 0x76 vs 0x77 | Driver probes both | Diag I²C scan |
 | U6 | VL53L0X vs VL53L1X (list says "decision pending") | VL53L0X (0x29) | Parts arrival |
 | U7 | Power option A (powerbank) or B (18650) | A | Hardware team |
-| U8 | Field Wi-Fi: laptop hotspot vs phone hotspot vs ESP32 soft-AP | ESP32 joins a phone/laptop hotspot (STA), credentials in secrets.h; broadcast + ping discovery, so no IPs needed. Some hotspots block client-to-client or broadcast traffic → test before Week 9 | Field test |
+| U8 | Field Wi-Fi: laptop hotspot vs phone hotspot vs ESP32 soft-AP | ESP32 joins a phone/laptop hotspot (STA, 2.4 GHz only), credentials via serial console; broadcast + ping discovery, so no IPs needed. Some hotspots block client-to-client or broadcast traffic → test before Week 9 | Field test |
 | U9 | ESP32 USB chip CP2102 vs CH340 (driver for flashing) | Either; guide covers both | Hardware team |
 | U10 | Wokwi support for BME280 / VL53L0X / GNSS | Not supported → mocks in sim | Verify when building wokwi/ |
 | U11 | Current semester week | Plan relative to handout weeks | User |

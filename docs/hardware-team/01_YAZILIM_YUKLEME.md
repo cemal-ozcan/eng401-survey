@@ -1,7 +1,15 @@
 # 1. Yazılımı ESP32'ye Yükleme (kurulum gerektirmez)
 
 Gerekenler: **Chrome veya Edge** tarayıcı (Safari/Firefox çalışmaz), **veri hatlı** USB kablo,
-bana gönderilen `.bin` dosyası (ör. `eng401-v0.1-diag.bin`).
+bana gönderilen `.bin` dosyası. Üç çeşit dosya var, hangisinin yükleneceği ilgili kılavuzda yazar:
+
+| Dosya | Ne işe yarar |
+|---|---|
+| `eng401-v0.1.1-diag.bin` | Teşhis: kablolama ve sensör testi (kılavuz 02) |
+| `eng401-v0.2-app-mock.bin` | Asıl yazılım, **sahte sensörlerle** — sensör bağlamadan Wi-Fi ve dashboard denemesi (kılavuz 03) |
+| `eng401-v0.2-app.bin` | Asıl yazılım, gerçek sensörlerle — saha ölçümü (kılavuz 03, 04) |
+
+Her yükleme öncekinin yerine geçer; istediğiniz zaman başka bir dosyayı yükleyebilirsiniz.
 
 ## A. Bir kez yapılacak: sürücü
 1. ESP32'yi USB ile bilgisayara takın.

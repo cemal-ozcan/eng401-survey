@@ -33,6 +33,8 @@ constexpr size_t kRawNmeaLines = 6;
 diag::Report report;
 uint32_t runNumber = 0;
 bool buttonSeen = false;
+uint32_t gnssBaud = 9600;   // last detected GNSS baud rate
+bool rawNmea = false;       // 'n' toggles raw NMEA pass-through
 
 // ---------------------------------------------------------------- I2C helpers
 
@@ -300,6 +302,7 @@ void checkGnss() {
   }
 
   char detail[112];
+  if (chosenBaud != 0) gnssBaud = chosenBaud;
   if (chosenBaud == 0) {
     report.set("GNSS", diag::Status::Fail,
                totalBytes == 0 ? "no data: check GNSS power, GND, GNSS TX->GPIO16; try swapping TX/RX"
@@ -440,7 +443,7 @@ void printReport() {
   report.summaryLine(line, sizeof(line));
   Serial.println(line);
   Serial.println("==================== COPY UNTIL HERE ===================");
-  Serial.printf("Next run in %lu s. Press 'r' + Enter in the serial monitor to run now.\n",
+  Serial.printf("Next run in %lu s. Type 'r' + Enter to run now, 'n' + Enter for raw GNSS (NMEA) output.\n",
                 static_cast<unsigned long>(kRerunPeriodMs / 1000));
 }
 
@@ -499,6 +502,24 @@ void loop() {
   while (Serial.available()) {
     char c = static_cast<char>(Serial.read());
     if (c == 'r' || c == 'R') rerunRequested = true;
+    if (c == 'n' || c == 'N') {
+      rawNmea = !rawNmea;
+      if (rawNmea) {
+        Serial2.end();
+        Serial2.begin(gnssBaud, SERIAL_8N1, pins::kGnssRx, pins::kGnssTx);
+        Serial.printf("\n### RAW NMEA ON (%lu baud). Type 'n' + Enter to stop. ###\n",
+                      static_cast<unsigned long>(gnssBaud));
+      } else {
+        Serial.println("\n### RAW NMEA OFF ###");
+        lastRun = millis();
+      }
+    }
+  }
+
+  if (rawNmea) {  // pass GNSS bytes straight through; no test runs meanwhile
+    while (Serial2.available()) Serial.write(static_cast<uint8_t>(Serial2.read()));
+    delay(2);
+    return;
   }
 
   if (rerunRequested || millis() - lastRun >= kRerunPeriodMs) {

@@ -1,0 +1,5 @@
+{
+  "name": "console",
+  "version": "0.1.0",
+  "description": "Serial console command parsing and device settings validation"
+}

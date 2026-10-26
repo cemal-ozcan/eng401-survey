@@ -31,6 +31,7 @@ void logTask(void*) {
       ++recordsLogged;
       if (config::kEchoCsvToSerial && record::toCsv(r, line, sizeof(line)) > 0) serialPrintf("%s", line);
     }
+    if (flushRequested.exchange(false)) log.flushNow();
     log.tick();
     if (storageOk.load() != log.ok()) {
       storageOk = log.ok();

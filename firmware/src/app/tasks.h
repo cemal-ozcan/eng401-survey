@@ -10,6 +10,7 @@
 //                 │                │
 //             logTask           netTask
 //   uiTask: button -> observation marks, LEDs     monitorTask: periodic health report
+//   consoleTask: serial commands (Wi-Fi settings)
 
 namespace app {
 
@@ -20,5 +21,6 @@ void logTask(void*);
 void netTask(void*);
 void uiTask(void*);
 void monitorTask(void*);
+void consoleTask(void*);
 
 }  // namespace app

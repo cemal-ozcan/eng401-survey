@@ -1,8 +1,9 @@
 // Wi-Fi telemetry (requirement R7): sends every record as a UDP JSON datagram,
 // a heartbeat every second, and answers PC pings for latency measurement.
 //
-// PC discovery: data goes to TELEMETRY_DEFAULT_HOST (broadcast) until the first
+// PC discovery: data goes to settings.host (default broadcast) until the first
 // ping arrives; afterwards it is sent unicast to the address that pinged.
+// Wi-Fi credentials come from NVS (serial console 'wifi' command) or secrets.h.
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -12,13 +13,8 @@
 #include "config.h"
 #include "shared_state.h"
 #include "tasks.h"
+#include "settings_store.h"
 #include "telemetry.h"
-
-#if __has_include("secrets.h")
-#include "secrets.h"
-#else
-#include "secrets.example.h"
-#endif
 
 namespace app {
 
@@ -65,12 +61,20 @@ std::atomic<uint32_t> netDrops{0};
 
 void netTask(void*) {
   hal::Devices& d = hal::devices();
-  target.fromString(TELEMETRY_DEFAULT_HOST);
+  if (!target.fromString(settings.host)) target = IPAddress(255, 255, 255, 255);
+  if (settings.ssid[0] == '\0') {
+    serialPrintf("# NET no Wi-Fi configured. Type: wifi \"<hotspot name>\" \"<password>\"  then: reboot");
+    record::Record r;
+    for (;;) {  // keep draining the queue so the sampler never sees it full
+      xQueueReceive(netQueue, &r, portMAX_DELAY);
+      ++netDrops;
+    }
+  }
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);  // modem sleep adds 100+ ms latency spikes
   WiFi.setAutoReconnect(true);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  serialPrintf("# NET connecting to \"%s\"", WIFI_SSID);
+  WiFi.begin(settings.ssid, settings.password[0] ? settings.password : nullptr);
+  serialPrintf("# NET connecting to \"%s\"", settings.ssid);
 
   uint64_t lastHb = 0, lastReconnect = d.clock.nowUs();
   record::Record r;

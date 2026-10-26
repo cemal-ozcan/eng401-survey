@@ -7,6 +7,7 @@
 #include "build_info.h"
 #include "config.h"
 #include "hal.h"
+#include "settings_store.h"
 #include "shared_state.h"
 #include "tasks.h"
 
@@ -22,6 +23,7 @@ std::atomic<uint32_t> recordsLogged{0};
 std::atomic<uint16_t> pendingMark{0};
 std::atomic<uint64_t> lastLogUs{0};
 std::atomic<bool> storageOk{false};
+std::atomic<bool> flushRequested{false};
 logger::Stats loggerStats;
 
 }  // namespace app
@@ -47,6 +49,7 @@ void setup() {
                 build_info::modeName(), static_cast<unsigned long>(config::kSamplePeriodMs));
 
   app::serialMutex = xSemaphoreCreateMutex();
+  app::loadSettings(app::settings);
   app::shared.init();
   app::logQueue = xQueueCreate(config::kQueueLength, sizeof(record::Record));
   app::netQueue = xQueueCreate(config::kQueueLength, sizeof(record::Record));
@@ -63,6 +66,7 @@ void setup() {
   startTask(app::netTask, "net", kStackNet, kPrioNet, kNetCore, 4);
   startTask(app::uiTask, "ui", kStackUi, kPrioUi, kAppCore, 5);
   startTask(app::monitorTask, "monitor", kStackMonitor, kPrioMonitor, kAppCore, -1, handles);
+  startTask(app::consoleTask, "console", kStackMonitor, kPrioMonitor, kAppCore, -1);
 }
 
 void loop() { vTaskDelete(nullptr); }  // everything runs in tasks
