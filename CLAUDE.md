@@ -6,7 +6,7 @@ Chain that MUST work end-to-end at the final demo (handout §12):
 `Power ON → GNSS → multi-sensor acquisition → timestamping → UTM → SD logging → Wi-Fi telemetry → PC dashboard → GIS map`
 
 Binding sources (in `reference/`): `eng401_handout.pdf` (R1–R11, weekly milestones, D1–D8,
-required tests, grading), `ENG401_Satin_Alinacak_Malzemeler.docx` (actual parts list).
+required tests, grading), `ENG401_Satin_Alinacak_Malzemeler.docx` (parts list = hardware baseline; pending instructor approval).
 `old_role_table.jpeg` is historical only.
 
 ## Team & division of work
@@ -77,7 +77,7 @@ reference/          handout, parts list
 ## Unknowns / assumptions (keep updated)
 | # | Item | Current assumption | How to resolve |
 |---|------|--------------------|----------------|
-| U1 | GNSS model: user said **NEO-6M**, parts list says team owns **NEO-M8N** | Generic NMEA @ 9600 baud, 1 Hz; baud configurable | Ask user / diag firmware prints raw NMEA ($GPxxx = 6M-style, $GNxxx = M8N multi-GNSS) |
+| U1 | GNSS model | **Decided: u-blox NEO-M8N** (parts list is the baseline, list still awaiting instructor approval). Generic NMEA @ 9600 baud, 1 Hz; accept $GP/$GN/$GL talkers | Diag firmware prints raw NMEA |
 | U2 | M8N connector is 6-pin 1.25 mm (drone type); pinout unknown, often includes a compass on I²C (SDA/SCL) | Use only VCC, GND, TX, RX; leave compass unconnected at first | Photo of module label / connector |
 | U3 | GNSS module supply voltage (3.3 V or 5 V) | Do not assume; check module silkscreen | Photo from hardware team |
 | U4 | PPS pin availability | No PPS → UTC offset accuracy ~±100 ms | Module photo |
