@@ -32,16 +32,38 @@ void tearDown() {}
 
 static constexpr uint32_t kSeconds = 600;
 
-void test_ten_minute_survey() {
-  FakeClock clock;
-  hal::MockRoute route;
-  hal::MockGnssConfig gcfg;  // cold start 10 s, outage 12 s every 180 s
-  hal::MockGnss gnss(clock, route, gcfg);
-  hal::MockImu imu(clock, 11);
+struct SimResult {
+  std::string csv;
+  int fixRows = 0, utcRows = 0;
+  int64_t maxUtcErrMs = 0;
+  uint32_t written = 0, dropped = 0;
+};
+
+static void writeFile(const char* dir, const char* name, const std::string& text) {
+  std::string path = std::string(dir) + "/" + name;
+  FILE* f = std::fopen(path.c_str(), "w");
+  TEST_ASSERT_NOT_NULL(f);
+  std::fwrite(text.data(), 1, text.size(), f);
+  std::fclose(f);
+  std::printf("sim: wrote %s\n", path.c_str());
+}
+
+static SimResult runSurvey(const hal::MockGnssConfig& gcfg, bool walking, hal::MockRoute& route,
+                           hal::MockGnss*& gnssOut) {
+  // The returned MockGnss (used for truthAt) refers to the clock, so both
+  // outlive this function; each call starts a fresh survey.
+  static FakeClock clock;
+  clock.us = 0;
+  static hal::MockGnss* keep = nullptr;
+  delete keep;
+  keep = new hal::MockGnss(clock, route, gcfg);
+  hal::MockGnss& gnss = *keep;
+  gnssOut = keep;
+  hal::MockImu imu(clock, 11, hal::MockFaults(), walking);
   hal::MockFaults envFaults;
   envFaults.readErrorRate = 0.02f;  // occasional BME280 glitch
   hal::MockEnv env(clock, 12, envFaults);
-  hal::MockRange range(clock, 13);
+  hal::MockRange range(clock, 13, hal::MockFaults(), 100, 0.05f, walking ? 60.0f : 0.0f);
   hal::MockStorage sd(4u << 20);
   logger::SurveyLogger log(sd, clock);
 
@@ -108,12 +130,30 @@ void test_ten_minute_survey() {
   }
   log.flushNow();
 
-  const std::string& csv = sd.contents(log.fileName());
+  SimResult res;
+  res.csv = sd.contents(log.fileName());
+  res.fixRows = fixRows;
+  res.utcRows = utcRows;
+  res.maxUtcErrMs = maxUtcErrMs;
+  res.written = log.stats().recordsWritten;
+  res.dropped = log.stats().recordsDropped;
+  return res;
+}
+
+void test_ten_minute_survey() {
+  hal::MockRoute route;
+  hal::MockGnssConfig gcfg;  // cold start 10 s, outage 12 s every 180 s
+  hal::MockGnss* gnssPtr = nullptr;
+  SimResult res = runSurvey(gcfg, true, route, gnssPtr);
+  hal::MockGnss& gnss = *gnssPtr;
+  const std::string& csv = res.csv;
+  const int fixRows = res.fixRows, utcRows = res.utcRows;
+  const int64_t maxUtcErrMs = res.maxUtcErrMs;
   int lines = 0;
   for (char c : csv) lines += c == '\n';
   TEST_ASSERT_EQUAL_INT(kSeconds + 1, lines);  // header + one row per second
-  TEST_ASSERT_EQUAL_UINT32(kSeconds, log.stats().recordsWritten);
-  TEST_ASSERT_EQUAL_UINT32(0, log.stats().recordsDropped);
+  TEST_ASSERT_EQUAL_UINT32(kSeconds, res.written);
+  TEST_ASSERT_EQUAL_UINT32(0, res.dropped);
   // Fix: lost during the first 10 s and in 3 outages of 12 s (at 90, 270, 450 s);
   // the GNSS solution sampled at x.5 s belongs to second x.
   TEST_ASSERT_EQUAL_INT(kSeconds - 10 - 3 * 12, fixRows);
@@ -121,32 +161,55 @@ void test_ten_minute_survey() {
   // Without PPS the time base cannot see the receiver's output latency: the
   // converted UTC is late-biased by exactly that lag (documented limitation).
   TEST_ASSERT_TRUE(maxUtcErrMs <= static_cast<int64_t>(gcfg.outputLagMs));
-  std::printf("sim: %d rows, %d with fix, %d with UTC, max UTC error %lld ms, file %s\n", lines - 1, fixRows,
-              utcRows, static_cast<long long>(maxUtcErrMs), log.fileName());
+  std::printf("sim: %d rows, %d with fix, %d with UTC, max UTC error %lld ms\n", lines - 1, fixRows, utcRows,
+              static_cast<long long>(maxUtcErrMs));
 
   const char* outDir = std::getenv("SIM_OUT");
   if (outDir != nullptr) {
-    std::string path = std::string(outDir) + "/mock_survey.csv";
-    FILE* f = std::fopen(path.c_str(), "w");
-    TEST_ASSERT_NOT_NULL(f);
-    std::fwrite(csv.data(), 1, csv.size(), f);
-    std::fclose(f);
-
-    path = std::string(outDir) + "/mock_truth.csv";
-    f = std::fopen(path.c_str(), "w");
-    TEST_ASSERT_NOT_NULL(f);
-    std::fprintf(f, "seq,lat,lon\n");
+    writeFile(outDir, "mock_survey.csv", csv);
+    std::string truth = "seq,lat,lon\n";
+    char line[64];
     for (uint32_t s = 0; s < kSeconds; ++s) {
       hal::RoutePose p = gnss.truthAt(s);
-      std::fprintf(f, "%u,%.8f,%.8f\n", s, p.lat, p.lon);
+      std::snprintf(line, sizeof(line), "%u,%.8f,%.8f\n", s, p.lat, p.lon);
+      truth += line;
     }
-    std::fclose(f);
-    std::printf("sim: wrote %s/mock_survey.csv and mock_truth.csv\n", outDir);
+    writeFile(outDir, "mock_truth.csv", truth);
+    std::string planned = "vertex,lat,lon\n";
+    for (size_t i = 0; i < route.pointCount(); ++i) {
+      double lat, lon;
+      route.toLatLon(route.point(i).e, route.point(i).n, lat, lon);
+      std::snprintf(line, sizeof(line), "%u,%.8f,%.8f\n", static_cast<unsigned>(i), lat, lon);
+      planned += line;
+    }
+    writeFile(outDir, "mock_planned_route.csv", planned);
+  }
+}
+
+// Stationary device on a reference point: input for the static GNSS accuracy
+// and sensor repeatability analyses.
+void test_static_survey() {
+  hal::MockRoute route;
+  hal::MockGnssConfig gcfg;
+  gcfg.speedMps = 0.0;  // standing on the route origin
+  gcfg.outagePeriodS = 0;
+  gcfg.seed = 7;
+  hal::MockGnss* gnssPtr = nullptr;
+  SimResult res = runSurvey(gcfg, false, route, gnssPtr);
+  TEST_ASSERT_EQUAL_UINT32(kSeconds, res.written);
+  TEST_ASSERT_EQUAL_INT(kSeconds - 10, res.fixRows);
+  const char* outDir = std::getenv("SIM_OUT");
+  if (outDir != nullptr) {
+    writeFile(outDir, "mock_static.csv", res.csv);
+    char ref[96];
+    std::snprintf(ref, sizeof(ref), "id,lat,lon\nREF1,%.8f,%.8f\n", route.originLat(), route.originLon());
+    writeFile(outDir, "mock_static_reference.csv", ref);
   }
 }
 
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_ten_minute_survey);
+  RUN_TEST(test_static_survey);
   return UNITY_END();
 }

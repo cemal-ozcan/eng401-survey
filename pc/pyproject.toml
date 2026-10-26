@@ -7,7 +7,7 @@ name = "surveypc"
 version = "0.0.1"
 description = "ENG401 survey system: PC receiver, dashboard, virtual ESP32, analysis helpers"
 requires-python = ">=3.10"
-dependencies = ["pyproj>=3.6"]
+dependencies = ["pyproj>=3.6", "numpy>=1.26", "matplotlib>=3.8"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]

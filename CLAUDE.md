@@ -55,7 +55,9 @@ firmware/           PlatformIO project (env: esp32 real, esp32-mock, diag, nativ
 wokwi/              Wokwi simulator config (diagram.json, wokwi.toml)
 pc/surveypc/        receiver, dashboard, virtual_esp32, replay, protocol codec
 pc/tests/           pytest
-analysis/           required-test scripts (GNSS error, repeatability, timing, latency, completeness, route) + GIS export
+analysis/           CLIs: run_all.py (all required tests + GIS export → report.md/results.json/figures/gis), verify_utm.py
+pc/surveypc/analysis/  analysis library (data loading, stats, tests, gis, plots, report) — tested in pc/tests/test_analysis.py
+docs/geomatics-team/   Turkish field procedure + analysis/QGIS guide for the GE team
 data/raw|processed|replay   field logs (large files not committed)
 data/sample/        mock 10-min survey + ground truth from firmware test_pipeline_sim (committed; regenerate with
                     `cd firmware && SIM_OUT=$PWD/../data/sample ../.venv/bin/pio test -e native -f test_pipeline_sim`)
@@ -93,6 +95,7 @@ Tooling lives in the repo venv `.venv/` (PlatformIO, pytest, pyproj). Setup:
 - Dashboard: `.venv/bin/python -m surveypc.dashboard` (real device) or `--demo` (built-in virtual ESP32);
   headless check: `QT_QPA_PLATFORM=offscreen ... --demo --screenshot out.png --after 20`
 - Telemetry without hardware: `.venv/bin/python -m surveypc.receiver` + `.venv/bin/python -m surveypc.virtual_esp32 [--loss 0.05 --delay-ms 25]`
+- All required tests on sample data: see header of `analysis/run_all.py` (outputs to data/processed/, not committed)
 - Release for hardware team: `tools/make_release.sh <env> <tag>` → `dist/<tag>/eng401-<tag>.bin` (flash at 0x0), then `git tag <tag>`
 
 ## Unknowns / assumptions (keep updated)

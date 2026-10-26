@@ -31,6 +31,8 @@ class MockRoute {
   // Local metres -> WGS84 (equirectangular approximation, fine for < few km).
   void toLatLon(double e, double n, double& lat, double& lon) const;
 
+  size_t pointCount() const { return count_; }
+  LocalPoint point(size_t i) const { return pts_[i]; }
   double originLat() const { return lat0_; }
   double originLon() const { return lon0_; }
 

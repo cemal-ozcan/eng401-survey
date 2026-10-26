@@ -46,9 +46,9 @@ class MockEnv : public EnvSensor {
 
 class MockRange : public RangeSensor {
  public:
-  // Measures every periodMs; noOutOfRangeRate = probability of "no target".
+  // Measures every periodMs; outOfRangeRate = probability of "no target".
   MockRange(Clock& clock, uint32_t seed, MockFaults faults = MockFaults(), uint32_t periodMs = 100,
-            float outOfRangeRate = 0.05f);
+            float outOfRangeRate = 0.05f, float terrainAmplitudeMm = 60.0f);
   Status begin() override;
   Status poll(RangeSample& out) override;
 
@@ -58,6 +58,7 @@ class MockRange : public RangeSensor {
   MockFaults faults_;
   uint32_t periodUs_;
   float outOfRangeRate_;
+  float terrainMm_;  // slow ground-height variation while walking (0 = static)
   bool ready_ = false;
   uint64_t nextUs_ = 0;
 };

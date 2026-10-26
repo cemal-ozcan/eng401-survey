@@ -69,8 +69,14 @@ Status MockEnv::read(EnvSample& s) {
 
 // ---------------------------------------------------------------- VL53L0X
 
-MockRange::MockRange(Clock& clock, uint32_t seed, MockFaults faults, uint32_t periodMs, float outOfRangeRate)
-    : clock_(clock), rng_(seed), faults_(faults), periodUs_(periodMs * 1000u), outOfRangeRate_(outOfRangeRate) {}
+MockRange::MockRange(Clock& clock, uint32_t seed, MockFaults faults, uint32_t periodMs, float outOfRangeRate,
+                     float terrainAmplitudeMm)
+    : clock_(clock),
+      rng_(seed),
+      faults_(faults),
+      periodUs_(periodMs * 1000u),
+      outOfRangeRate_(outOfRangeRate),
+      terrainMm_(terrainAmplitudeMm) {}
 
 Status MockRange::begin() {
   ready_ = !faults_.notFound;
@@ -91,7 +97,7 @@ Status MockRange::poll(RangeSample& s) {
   }
   // Sensor on the pole pointing at the ground ~1.5 m away; terrain varies slowly.
   double t = seconds(now);
-  float mm = 1500.0f + 60.0f * static_cast<float>(std::sin(t / 7.0)) + 4.0f * rng_.gauss();
+  float mm = 1500.0f + terrainMm_ * static_cast<float>(std::sin(t / 7.0)) + 4.0f * rng_.gauss();
   s.mm = static_cast<uint16_t>(mm);
   s.valid = true;
   return Status::Ok;
