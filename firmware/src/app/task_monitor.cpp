@@ -35,6 +35,14 @@ void monitorTask(void* taskHandles) {
                  sensorState(h.imu), static_cast<unsigned long>(h.imu.errors()), sensorState(h.env),
                  static_cast<unsigned long>(h.env.errors()), sensorState(h.range),
                  static_cast<unsigned long>(h.range.errors()), static_cast<unsigned long>(ESP.getFreeHeap()));
+    shared.lock();
+    logger::Stats ls = loggerStats;
+    shared.unlock();
+    serialPrintf("# STAT sd=%s written=%lu dropped=%lu sd_errors=%lu files=%lu kb=%lu max_write_ms=%.1f",
+                 storageOk.load() ? "OK" : "FAIL", static_cast<unsigned long>(ls.recordsWritten),
+                 static_cast<unsigned long>(ls.recordsDropped), static_cast<unsigned long>(ls.writeErrors),
+                 static_cast<unsigned long>(ls.filesOpened), static_cast<unsigned long>(ls.bytesWritten / 1024),
+                 ls.maxWriteUs / 1000.0);
     char stacks[160] = "# STACK free(bytes)";
     for (int i = 0; i < 6; ++i) {
       char item[24];

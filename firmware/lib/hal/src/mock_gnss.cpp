@@ -83,7 +83,10 @@ void MockGnss::generateEpoch(uint32_t s) {
 
 size_t MockGnss::read(char* out, size_t maxLen) {
   if (!started_ || cfg_.silent) return 0;
-  int64_t nowS = static_cast<int64_t>(clock_.nowUs() / 1000000ULL);
+  const uint64_t lagUs = static_cast<uint64_t>(cfg_.outputLagMs) * 1000ULL;
+  const uint64_t now = clock_.nowUs();
+  if (now < lagUs) return 0;
+  int64_t nowS = static_cast<int64_t>((now - lagUs) / 1000000ULL);
   uint32_t produced = 0;
   while (nextEpoch_ <= nowS && produced < kMaxEpochsPerRead) {
     generateEpoch(static_cast<uint32_t>(nextEpoch_));

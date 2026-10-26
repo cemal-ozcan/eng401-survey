@@ -22,6 +22,7 @@ std::atomic<uint32_t> recordsLogged{0};
 std::atomic<uint16_t> pendingMark{0};
 std::atomic<uint64_t> lastLogUs{0};
 std::atomic<bool> storageOk{false};
+logger::Stats loggerStats;
 
 }  // namespace app
 
@@ -53,8 +54,6 @@ void setup() {
   hal::Devices& d = hal::devices();
   Serial.printf("# INIT GNSS %s (baud %lu)\n", d.gnss.begin(config::kGnssBaud) ? "OK" : "FAIL",
                 static_cast<unsigned long>(config::kGnssBaud));
-  app::storageOk = d.storage.begin();
-  Serial.printf("# INIT SD %s\n", app::storageOk ? "OK" : "FAIL");
 
   using namespace config;
   startTask(app::gnssTask, "gnss", kStackGnss, kPrioGnss, kAppCore, 0);

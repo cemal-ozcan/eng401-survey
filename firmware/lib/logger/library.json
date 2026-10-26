@@ -1,0 +1,5 @@
+{
+  "name": "logger",
+  "version": "0.1.0",
+  "description": "Buffered survey CSV logger on top of hal::Storage"
+}

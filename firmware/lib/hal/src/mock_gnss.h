@@ -24,6 +24,7 @@ struct MockGnssConfig {
   uint32_t outagePeriodS = 180;          // a fix outage every period (0 = never)
   uint32_t outageDurationS = 12;
   float altitudeM = 938.0f;
+  uint32_t outputLagMs = 100;            // NMEA for epoch N appears N s + lag (receiver + UART)
   uint32_t seed = 1;
   bool silent = false;                   // simulate a disconnected module
 };

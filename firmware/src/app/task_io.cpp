@@ -1,5 +1,5 @@
-// Consumer and housekeeping tasks. logTask and netTask are placeholders here:
-// step 5 adds buffered SD logging, step 6 Wi-Fi telemetry.
+// Consumer and housekeeping tasks: SD logging, telemetry (placeholder until
+// step 6) and the user interface.
 
 #include <Arduino.h>
 
@@ -7,20 +7,38 @@
 #include "pins.h"
 #include "debouncer.h"
 #include "shared_state.h"
+#include "survey_logger.h"
 #include "tasks.h"
 
 namespace app {
 
 void logTask(void*) {
+  hal::Devices& d = hal::devices();
+  logger::SurveyLogger log(d.storage, d.clock);
+  log.begin();
+  storageOk = log.ok();
+  serialPrintf("# LOG file %s %s", log.fileName(), log.ok() ? "OK" : "FAIL (will retry)");
+  if (config::kEchoCsvToSerial) serialPrintf("%s", record::csvHeader());
+
   record::Record r;
   char line[record::kMaxCsvLen];
-  serialPrintf("%s", record::csvHeader());
   for (;;) {
-    // Blocking on a queue is not busy-waiting: the task sleeps until data arrives.
-    if (xQueueReceive(logQueue, &r, portMAX_DELAY) != pdTRUE) continue;
-    if (record::toCsv(r, line, sizeof(line)) > 0) serialPrintf("%s", line);
-    lastLogUs = hal::devices().clock.nowUs();
-    ++recordsLogged;
+    // Wait for a record, but wake up at least every 500 ms so time-based
+    // flushes and SD retries still happen when no data arrives.
+    if (xQueueReceive(logQueue, &r, pdMS_TO_TICKS(500)) == pdTRUE) {
+      log.append(r);
+      lastLogUs = d.clock.nowUs();
+      ++recordsLogged;
+      if (config::kEchoCsvToSerial && record::toCsv(r, line, sizeof(line)) > 0) serialPrintf("%s", line);
+    }
+    log.tick();
+    if (storageOk.load() != log.ok()) {
+      storageOk = log.ok();
+      serialPrintf("# LOG %s file %s", log.ok() ? "recovered," : "ERROR, retrying;", log.fileName());
+    }
+    shared.lock();  // struct copy shared with monitorTask
+    loggerStats = log.stats();
+    shared.unlock();
   }
 }
 

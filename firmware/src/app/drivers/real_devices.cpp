@@ -116,6 +116,7 @@ hal::Status Vl53l0xRange::poll(hal::RangeSample& s) {
 // ---------------------------------------------------------------- SD card
 
 bool SdStorage::begin() {
+  SD.end();  // allows re-mounting after the card was pulled out
   SPI.begin(pins::kSdSck, pins::kSdMiso, pins::kSdMosi, pins::kSdCs);
   return SD.begin(pins::kSdCs, SPI, kSdSpiHz) && SD.cardType() != CARD_NONE;
 }

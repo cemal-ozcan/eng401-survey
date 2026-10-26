@@ -56,6 +56,8 @@ pc/surveypc/        receiver, dashboard, virtual_esp32, replay, protocol codec
 pc/tests/           pytest
 analysis/           required-test scripts (GNSS error, repeatability, timing, latency, completeness, route) + GIS export
 data/raw|processed|replay   field logs (large files not committed)
+data/sample/        mock 10-min survey + ground truth from firmware test_pipeline_sim (committed; regenerate with
+                    `cd firmware && SIM_OUT=$PWD/../data/sample ../.venv/bin/pio test -e native -f test_pipeline_sim`)
 docs/ICD.md         telemetry + CSV data dictionary (single source of truth for formats)
 docs/PINOUT.md      pin table (sent to hardware team)
 docs/hardware-team/ Turkish step-by-step guides: flashing, wiring, test procedures
@@ -95,7 +97,7 @@ Tooling lives in the repo venv `.venv/` (PlatformIO, pytest, pyproj). Setup:
 | U1 | GNSS model | **Decided: u-blox NEO-M8N** (parts list is the baseline, list still awaiting instructor approval). Generic NMEA @ 9600 baud, 1 Hz; accept $GP/$GN/$GL talkers | Diag firmware prints raw NMEA |
 | U2 | M8N connector is 6-pin 1.25 mm (drone type); pinout unknown, often includes a compass on I²C (SDA/SCL) | Use only VCC, GND, TX, RX; leave compass unconnected at first | Photo of module label / connector |
 | U3 | GNSS module supply voltage (3.3 V or 5 V) | Do not assume; check module silkscreen | Photo from hardware team |
-| U4 | PPS pin availability | No PPS → UTC offset accuracy ~±100 ms | Module photo |
+| U4 | PPS pin availability | No PPS → UTC is biased by the receiver's NMEA output latency (tens–~100 ms, not observable without PPS); jitter removed by TimeBase | Module photo |
 | U5 | BME280 I²C address 0x76 vs 0x77 | Driver probes both | Diag I²C scan |
 | U6 | VL53L0X vs VL53L1X (list says "decision pending") | VL53L0X (0x29) | Parts arrival |
 | U7 | Power option A (powerbank) or B (18650) | A | Hardware team |

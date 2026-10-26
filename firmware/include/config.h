@@ -18,6 +18,7 @@ constexpr uint32_t kUiLoopMs = 10;
 constexpr uint32_t kMonitorPeriodMs = 10000;
 
 constexpr uint32_t kQueueLength = 20;      // records buffered per consumer
+constexpr bool kEchoCsvToSerial = true;    // also print every record on the serial port
 
 // FreeRTOS priorities (higher = more urgent). Sampling must never be late.
 constexpr uint32_t kPrioSample = 5;

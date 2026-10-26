@@ -3,9 +3,11 @@
 Usage:
     .venv/bin/python analysis/verify_utm.py data/raw/SURVEY_001.CSV [--out data/processed/utm_check.csv]
 
-Note: the device prints easting/northing with 3 decimals, so differences up to
-~0.7 mm are pure rounding; the algorithm itself agrees to < 0.001 mm
-(firmware native test test_utm).
+Expected differences come only from CSV rounding, not from the algorithm
+(which agrees with pyproj to < 0.001 mm, firmware native test test_utm):
+  - lat/lon have 8 decimals: 0.5e-8 deg = 0.56 mm (north), 0.43 mm (east at 40 deg)
+  - easting/northing have 3 decimals: 0.5 mm per axis
+  worst case ~ hypot(0.56 + 0.5, 0.43 + 0.5) = 1.4 mm  -> default threshold 2 mm.
 """
 
 import argparse
@@ -19,7 +21,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("survey_csv", type=Path)
     ap.add_argument("--out", type=Path, help="write per-row differences to this CSV")
-    ap.add_argument("--max-mm", type=float, default=1.0, help="pass threshold (default 1 mm)")
+    ap.add_argument("--max-mm", type=float, default=2.0, help="pass threshold (default 2 mm, see above)")
     args = ap.parse_args()
 
     res = compare_records(read_survey_csv(args.survey_csv))
