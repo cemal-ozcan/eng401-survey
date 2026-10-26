@@ -1,0 +1,5 @@
+{
+  "name": "rt",
+  "version": "0.1.0",
+  "description": "Real-time support logic: time base, interval statistics, sensor supervision, debouncing"
+}

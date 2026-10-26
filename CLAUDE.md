@@ -32,8 +32,14 @@ required tests, grading), `ENG401_Satin_Alinacak_Malzemeler.docx` (parts list = 
             └─────────────────────────────────────────────────────────────┘
  PC: receiver (UDP) → CSV + dashboard (PyQt/pyqtgraph) ; analysis scripts → GeoJSON/CSV → QGIS
 ```
-- **Time base:** `esp_timer_get_time()` (µs, monotonic) stamps every sample. GNSS RMC/ZDA UTC
-  disciplines an offset → `utc = t_us + offset`. No PPS assumed (see unknowns).
+- **Tasks** (`firmware/src/app/`, priorities/stacks in `include/config.h`): gnssTask (UART→parser→SharedState),
+  sensorTask (ToF poll 50 Hz, IMU 10 Hz averaged per record, BME 1 Hz; `rt::Supervisor` re-inits failed
+  sensors with back-off), sampleTask (highest prio, `vTaskDelayUntil`, seq#, timestamps, UTM, zero-timeout
+  queue sends), logTask / netTask (queue consumers), uiTask (button marks, LEDs), monitorTask (`# STAT` lines).
+  Serial lines starting with `#` are diagnostics, everything else is CSV.
+- **Time base:** `esp_timer_get_time()` (µs, monotonic) stamps every sample. `rt::TimeBase` keeps
+  max(utc − local_rx) over a 32-sample window (least-delayed NMEA sentence) → `utc = t_us + offset`.
+  No PPS assumed (see unknowns).
 - **UTM:** computed on-device with our own Transverse Mercator (Krüger series, WGS84);
   PC re-derives with `pyproj` as independent verification (handout §9).
 - **Telemetry:** UDP JSON (see `docs/ICD.md`). Latency via NTP-style ping/pong clock-offset estimate.
